@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.8 — 2026-10-27
+
+- `stop()` now restores the five patched files automatically on disable and on a clean shutdown.
+  The running pet host keeps the already-loaded code until Coopanion restarts; the next launch
+  is unpatched unless the World is enabled again.
+- A killed process or an uninstall that does not call `stop()` still needs `mouse_fix_restore`
+  or a manual restore. This is documented in the README.
+- This does not change the market block: Coopanion still considers program-file patching,
+  all-figure effects and the lack of a guaranteed uninstall hook out of bounds. 0.1.8 is an
+  out-of-market mod.
+
 ## 0.1.7 — 2026-10-27
 
 - Drag now uses **click-through + native button polling**, per the 0.1.6 result that 2000+ Hz

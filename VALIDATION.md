@@ -1,6 +1,6 @@
 # Validation record
 
-Date: 2026-10-26. Coopanion 0.2.11, Windows 11 26H2 build 26300.9711. Package 0.1.7 (click-through drag + native button poll).
+Date: 2026-10-26. Coopanion 0.2.11, Windows 11 26H2 build 26300.9711. Package 0.1.8 (stop auto-restore).
 
 ## Package
 
@@ -86,16 +86,17 @@ The patched real `web/pet-app.js` was also parsed with `node --input-type=module
 - with `COOPANION_VERSION` / `CORTICO_SUPERVISED` set and cwd at a fake app root, `create({enabled:true, autoApply:true})` patches before `start()`;
 - page wrapper applied in the same pass;
 - `mouse_fix_status` reports `patched` and `0.2.11`;
-- `mouse_fix_restore` returns all four files to the fixture bytes.
+- `world.stop()` restores all five files before `mouse_fix_restore` is called;
+- `mouse_fix_restore` returns all five files to the fixture bytes.
 
 ## Published
 
-- npm: `cortico-world-mouse-polling-fix@0.1.7`, latest, published 2026-10-27 as funst.
-- Market: `[sync]` issue #347 closed with "Listed at 0.1.7"; catalog entry updated; discussion #337.
-- npm tarball shasum `d4eab4cfa3927cf3c7994c9bfc6ae33cd99c0781`.
+- npm latest: `cortico-world-mouse-polling-fix@0.1.7`, published 2026-10-27 as funst. 0.1.8 is local until published.
+- Market: `[sync]` issue #347 listed 0.1.7; the package was then blocked by #348 for rewriting program files, so 0.1.8 is out-of-market.
+- npm 0.1.7 tarball shasum `d4eab4cfa3927cf3c7994c9bfc6ae33cd99c0781`.
 
 ## Not done here
 
-- npm publish: done as funst (0.1.2 and 0.1.7).
+- npm publish: done as funst (0.1.2 and 0.1.7); 0.1.8 is local.
 - No live install into `F:\coo\Coopanion`: the agent's file sandbox only writes under the session workspace. The host files are writable by the user (NTFS `Authenticated Users: Modify`), so Coopanion itself can patch them; the package tests use copies of the real 0.2.11 files.
 - No real 8000 Hz measurement in this session. 0.1.0 removed the global hook and the user reported a large improvement; 0.1.1 adds the per-frame page coalescing aimed at the remaining drag stutter, which still needs the user's 8000 Hz test.

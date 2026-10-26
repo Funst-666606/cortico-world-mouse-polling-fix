@@ -135,14 +135,18 @@ assert.match(statusText, /patched/);
 assert.match(statusText, /0\.2\.11/);
 
 await world.start({ log: { info() {}, warn() {}, debug() {} } });
-const restore = world.tools().find((tool) => tool.name === 'mouse_fix_restore');
-const restoreText = await restore.handler({}, {});
-assert.match(restoreText, /restored/);
+assert.match(readFileSync(join(host, 'electron-main.cjs'), 'utf8'), /forward: false/);
+
+await world.stop();
 assert.equal(readFileSync(join(host, 'electron-main.cjs'), 'utf8'), FIXTURE_ELECTRON);
 assert.equal(readFileSync(join(host, 'mouse-lease.cjs'), 'utf8'), FIXTURE_LEASE);
 assert.equal(readFileSync(join(host, 'preload.cjs'), 'utf8'), FIXTURE_PRELOAD);
 assert.equal(readFileSync(join(web, 'pet-app.js'), 'utf8'), FIXTURE_PAGE);
 assert.equal(readFileSync(join(kit, 'body.js'), 'utf8'), FIXTURE_BODY);
+
+const restore = world.tools().find((tool) => tool.name === 'mouse_fix_restore');
+const restoreText = await restore.handler({}, {});
+assert.match(restoreText, /restored/);
 
 process.chdir(previousCwd);
 rmSync(root, { recursive: true, force: true });

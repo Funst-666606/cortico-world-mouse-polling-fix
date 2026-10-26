@@ -83,7 +83,20 @@ class MouseFixWorld {
     }
   }
 
-  async stop() {}
+  async stop() {
+    if (!IN_COOPANION) return;
+    // A World has no guarantee that uninstall will call stop(): Coopanion may remove the
+    // package without stopping it. This restores on disable and on a clean shutdown; a killed
+    // process or an uninstall without stop still needs mouse_fix_restore / a manual restore.
+    const result = restore({ dataDir: this.ctx.dataDir });
+    this.last = result;
+    if (!result.ok) {
+      this.log?.warn?.(`鼠标回报率修复：停用还原未完成：${result.error ?? 'unknown error'}`);
+      return;
+    }
+    const restored = result.restored?.length ? result.restored.join(', ') : 'nothing';
+    this.log?.info?.(`鼠标回报率修复：停用，已还原 ${restored}；重启 Coopanion 后完全卸载`);
+  }
 
   status() {
     if (!IN_COOPANION) return 'Mouse Polling Fix: not running inside Coopanion; nothing was patched.';

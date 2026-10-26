@@ -3,7 +3,7 @@
 作者：funst（QQ 2674459204）  
 协议：MIT（宽松开源协议）  
 适用：Coopanion 0.2.10 / 0.2.11，Windows  
-版本：0.1.7
+版本：0.1.8
 
 ## 1. 问题链路
 
@@ -212,6 +212,24 @@ if (!down) {
 **为什么底层不会误点**：拖动开始时窗口还是可交互的，初始 `mousedown` 已经被桌宠吃掉；之后窗口穿透，下层应用只会收到 `move`/`mouseup`，没有配对的 `mousedown`，所以不会形成一次点击。这是这个方案能成立的关键，也是需要在真实窗口上验证的取舍。
 
 `GetAsyncKeyState` 用已有的 koffi 加载 `user32.dll`；如果读不到（非 Windows/无 koffi），`dragStart` 不做任何事，页面保留 0.1.6 的旧路径。
+
+### 2.8 0.1.8：stop() 自动还原
+
+0.1.8 只改 World 生命周期：
+
+```js
+async stop() {
+  if (!IN_COOPANION) return;
+  const result = restore({ dataDir: this.ctx.dataDir });
+  ...
+  this.log?.info?.(`鼠标回报率修复：停用，已还原 ...；重启 Coopanion 后完全卸载`);
+}
+```
+
+- 停用 World 或正常退出时，`stop()` 调 `restore()`，把 5 个文件换回备份的原始字节；
+- 已经加载的桌宠宿主不会热卸载，必须重启 Coopanion 才完全回到原版；
+- 进程被强杀、或卸载时不调用 `stop()`，仍然要手动 `mouse_fix_restore`；
+- 这不改变市场拉黑：仍然改写程序文件、影响所有形象，0.1.8 是 out-of-market mod。
 
 ## 3. 代码结构
 

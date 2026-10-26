@@ -51,13 +51,19 @@ It does **not** modify the AI core, the Coopanion main process, your memory, or 
 
 ## Install
 
-### From the extension market / npm
+### npm / manual (out-of-market)
 
-Search for **Mouse Polling Fix** (package `cortico-world-mouse-polling-fix`) in Coopanion's extension page, or:
+The package is **blocked from Coopanion's extension market** (it rewrites five program files; see
+[the block notice](https://github.com/Pal-AI-Lab/cortico-extensions/pull/348)). Install it
+manually only if you understand that:
 
 ```bash
-pnpm add cortico-world-mouse-polling-fix
+# npm 0.1.7 is published; 0.1.8 (stop auto-restore) is local until published:
+pnpm add file:<path-to>/cortico-world-mouse-polling-fix-0.1.8.tgz
 ```
+
+This is an **out-of-market mod**, not a market extension: no market card, no automatic update,
+and no official support. It is not listed or recommended by the market.
 
 Then:
 
@@ -70,7 +76,8 @@ Then:
 
 The World is disabled by default. Enabling it once is enough; the setting survives app restarts.
 
-If you already run 0.1.0–0.1.6: install 0.1.7, restart, and check `mouse_fix_status` shows `pet-app.js: patched` and `body.js: patched`. 0.1.7 upgrades the page from its recorded backup automatically.
+If you already run 0.1.0–0.1.7: install 0.1.8, restart, and check `mouse_fix_status` shows
+`pet-app.js: patched` and `body.js: patched`. 0.1.8 adds automatic restore on `stop()`.
 
 ### Local development install
 
@@ -84,7 +91,7 @@ pnpm add file:/path/to/cortico-world-mouse-polling-fix
 | Tool | What it does |
 |---|---|
 | `mouse_fix_status` | Read-only: Coopanion/host versions, each file's state (`patched`, `original`, `skipped`, `unsupported`), backup paths, last error. |
-| `mouse_fix_apply` | Re-apply the patch (optional `poll_ms` 8–100, default 16). Useful after a Coopanion update or with `autoApply: false`. |
+| `mouse_fix_apply` | Re-apply the patch (optional `poll_ms` 4–100, default 5). Useful after a Coopanion update or with `autoApply: false`. |
 | `mouse_fix_restore` | Restore the exact bytes from the backups. Refuses if the current file is neither the patched nor the original bytes, so an app update or manual edit is never overwritten silently. |
 
 ## After a Coopanion update
@@ -95,16 +102,24 @@ If the new Coopanion changed the host lines, the plugin **refuses to guess**: `m
 
 ## Restore and uninstall
 
-Ask Coo to call `mouse_fix_restore` (or use the tool from the World page), then restart Coopanion. Disable the World and remove the package if you no longer want it. The backups and state live in:
+Disabling the World calls `stop()`, which restores the five files automatically. The already
+loaded pet host keeps the patched code until Coopanion restarts; **restart Coopanion to unload
+it fully**. Ask Coo to call `mouse_fix_restore` if you want to restore without disabling the
+World, then restart.
+
+A killed process or an uninstall that does not call `stop()` cannot run the restore hook; run
+`mouse_fix_restore` before removing the package. The backups and state live in:
 
 ```
 <Coopanion data>/mouse-polling-fix/
   state.json
   backups/<sha256>/electron-main.cjs
   backups/<sha256>/mouse-lease.cjs
+  ...
 ```
 
-Removing the extension does **not** automatically restore the files; run `mouse_fix_restore` first.
+Removing the extension is not a guaranteed restore: if `stop()` did not run, run
+`mouse_fix_restore` first or restore the files from those backups.
 
 ## Configuration
 
