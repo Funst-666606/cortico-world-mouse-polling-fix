@@ -1,0 +1,242 @@
+﻿diff --git a/packages/cortico-world-desktop-pet/host/electron-main.cjs b/packages/cortico-world-desktop-pet/host/electron-main.cjs
+index 2dbc5da..ebeca91 100644
+--- a/packages/cortico-world-desktop-pet/host/electron-main.cjs
++++ b/packages/cortico-world-desktop-pet/host/electron-main.cjs
+@@ -36,8 +36,16 @@ async function pageText(code) {
+   return { ...await load('en'), ...await load(code === 'zh' || code === 'zh-Hant' ? 'zh' : 'en'), ...await load(code) };
+ }
+ 
+-/** Milliseconds between the cursor reports the page gets. */
+-const CURSOR_EVERY_MS = 100;
++/** Milliseconds between the cursor reports the page gets: 5 ms keeps hover and drag within one 180 Hz frame. */
++// Raise the Windows timer resolution so 5 ms is not clamped to 15.6 ms; released on quit.
++try {
++  const winmm = require('koffi').load('winmm.dll');
++  const begin = winmm.func('uint32_t __stdcall timeBeginPeriod(uint32_t)');
++  const end = winmm.func('uint32_t __stdcall timeEndPeriod(uint32_t)');
++  begin(1);
++  app.on('will-quit', () => { try { end(1); } catch { /* already gone */ } });
++} catch { /* not Windows or koffi missing */ }
++const CURSOR_EVERY_MS = 5;
+ /** Milliseconds between the reads of the other windows, while the page asks for them. */
+ const WINDOWS_EVERY_MS = 700;
+ /** Milliseconds between the checks for a fullscreen window covering the pet's display. */
+@@ -317,6 +325,19 @@ function runPetHost({ url, parentPid = 0, tray: withTray = true }) {
+   let win = null, tray = null, dress = null, cursor;
+   // who holds the mouse, and when it is given back
+   const mouse = createMouseLease({ getWindow: () => win });
++  // Click-through drag: the page asks for it, and this process watches the left button.
++  let dragHeld = false;
++  let releaseCapture = null;
++  const leftButtonDown = (() => {
++    if (process.platform !== 'win32') return null;
++    try {
++      const user32 = require('koffi').load('user32.dll');
++      const GetAsyncKeyState = user32.func('int16_t __stdcall GetAsyncKeyState(int)');
++      const ReleaseCapture = user32.func('int __stdcall ReleaseCapture()');
++      releaseCapture = () => { try { ReleaseCapture(); } catch { /* no capture */ } };
++      return () => (GetAsyncKeyState(0x01) & 0x8000) !== 0;
++    } catch { return null; }
++  })();
+   // the window as an OBS layer, while the World asks for it
+   const key = new URLSearchParams(new URL(url).hash.slice(1)).get('key');
+   const overlay = createOverlaySource({ origin, key, getWindow: () => win });
+@@ -393,7 +414,7 @@ function runPetHost({ url, parentPid = 0, tray: withTray = true }) {
+     win.setAlwaysOnTop(true, process.platform === 'darwin' ? 'floating' : 'screen-saver');
+     // on every Space, and over an app in full screen
+     if (process.platform === 'darwin') win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+-    win.setIgnoreMouseEvents(true, { forward: true });
++    win.setIgnoreMouseEvents(true, { forward: false });
+     guard(win.webContents);
+     win.once('ready-to-show', () => win.showInactive());
+     // The page cannot tell for itself that it is hidden (background throttling is off, so it always reads as
+@@ -419,10 +440,19 @@ function runPetHost({ url, parentPid = 0, tray: withTray = true }) {
+       if (visible !== lastVisible) { lastVisible = visible; mouse.forget(); }
+       if (!visible) { mouse.tick(); return; }
+       const pt = cursor.read(), b = win.getBounds();
+-      const inside = pt.x >= b.x && pt.x < b.x + b.width && pt.y >= b.y && pt.y < b.y + b.height;
+-      const at = inside ? { x: pt.x - b.x, y: pt.y - b.y } : null;
++      const at = { x: pt.x - b.x, y: pt.y - b.y };
++      if (dragHeld) {
++        const down = leftButtonDown ? leftButtonDown() : false;
++        at.button = down;
++        if (!down) {
++          dragHeld = false;
++          win.webContents.send('pet:dragEnd');
++          mouse.ask(false);
++        }
++      }
+       win.webContents.send('pet:cursor', at);
+       mouse.tick();
++      if (dragHeld) win.setIgnoreMouseEvents(true, { forward: false });
+     }, CURSOR_EVERY_MS);
+     // hidden while the setting is on and a window fills the pet's monitor; shown again once neither holds
+     const fullscreenTimer = fullscreen && setInterval(() => {
+@@ -446,6 +476,13 @@ function runPetHost({ url, parentPid = 0, tray: withTray = true }) {
+     dress.loadURL(target);
+   };
+ 
++  onPet('pet:dragStart', () => {
++    if (!win || !leftButtonDown) return;
++    dragHeld = true;
++    mouse.ask(false);
++    if (releaseCapture) releaseCapture();
++    win.setIgnoreMouseEvents(true, { forward: false });
++  });
+   onPet('pet:interactive', (_e, on) => mouse.ask(on));
+   onPet('pet:focus', () => {
+     if (!win) return;
+diff --git a/packages/cortico-world-desktop-pet/host/mouse-lease.cjs b/packages/cortico-world-desktop-pet/host/mouse-lease.cjs
+index 93d19cb..33668eb 100644
+--- a/packages/cortico-world-desktop-pet/host/mouse-lease.cjs
++++ b/packages/cortico-world-desktop-pet/host/mouse-lease.cjs
+@@ -28,7 +28,7 @@ function createMouseLease({ getWindow, leaseMs = 1500, reassertMs = 2000, now =
+     if (hold === held && stamp - appliedAt < reassertMs) return;
+     held = hold;
+     appliedAt = stamp;
+-    win.setIgnoreMouseEvents(!hold, { forward: true });
++    win.setIgnoreMouseEvents(!hold, { forward: false });
+   };
+ 
+   return {
+diff --git a/packages/cortico-world-desktop-pet/host/preload.cjs b/packages/cortico-world-desktop-pet/host/preload.cjs
+index 7d4185d..0eabf61 100644
+--- a/packages/cortico-world-desktop-pet/host/preload.cjs
++++ b/packages/cortico-world-desktop-pet/host/preload.cjs
+@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld('petHost', {
+    * The wish is a lease the window process keeps for itself (`host/mouse-lease.cjs`).
+    */
+   setInteractive: (on) => ipcRenderer.send('pet:interactive', !!on),
++  /** Start a click-through drag; the window watches the left button and sends pet:dragEnd. */
++  dragStart: () => ipcRenderer.send('pet:dragStart'),
++  onDragEnd: (cb) => ipcRenderer.on('pet:dragEnd', () => cb()),
+   focus: () => ipcRenderer.send('pet:focus'),
+   /** Takes the keyboard from whatever window has it (a question's number keys), and gives it back. */
+   grabFocus: () => ipcRenderer.send('pet:grabFocus'),
+diff --git a/packages/cortico-world-desktop-pet/web/kit/body.js b/packages/cortico-world-desktop-pet/web/kit/body.js
+index 905d735..411418b 100644
+--- a/packages/cortico-world-desktop-pet/web/kit/body.js
++++ b/packages/cortico-world-desktop-pet/web/kit/body.js
+@@ -528,8 +528,8 @@ export function createPet(els, opts) {
+         break;
+       }
+       case 'drag': {
+-        pet.dx = lerp(pet.dx, pointer.x, ease(28, dt));
+-        pet.dy = lerp(pet.dy, Math.min(pointer.y, floorY - 245 * S), ease(28, dt));
++        pet.dx = lerp(pet.dx, pointer.x, ease(200, dt));
++        pet.dy = lerp(pet.dy, Math.min(pointer.y, floorY - 245 * S), ease(200, dt));
+         tiltT = clamp(pointer.vx * .035, -40, 40); tk = 90; tc = 5;
+         if (Math.abs(pointer.vx) > 500 && T > pet.sfxAt) { play('squeak', 'touch'); pet.sfxAt = T + rnd(.4, .7); }
+         break;
+diff --git a/packages/cortico-world-desktop-pet/web/pet-app.js b/packages/cortico-world-desktop-pet/web/pet-app.js
+index 2e7301a..235ab76 100644
+--- a/packages/cortico-world-desktop-pet/web/pet-app.js
++++ b/packages/cortico-world-desktop-pet/web/pet-app.js
+@@ -1503,7 +1503,7 @@ function writePointer(now) {
+ 
+ const UI_SELECTOR = '.bubble:not(.status):not(.fading):not([hidden]), .menu:not([hidden]), .tools:not([hidden])';
+ const overUi = (e) => e.target.closest && e.target.closest(UI_SELECTOR);
+-document.addEventListener('pointermove', (e) => {
++const runPointer = (e) => {
+   pointerSeen = true;
+   lastPointer.x = e.clientX; lastPointer.y = e.clientY;
+   const p = { x: e.clientX, y: e.clientY };
+@@ -1522,14 +1522,51 @@ document.addEventListener('pointermove', (e) => {
+   }
+   setInteractive(rendering() && (pressing || hit || ui), 'move');
+   followDrag(p);
++};
++let pendingPointer = null, pointerFrame = 0;
++// The window is click-through most of the time; a physical move only arrives while it holds the
++// mouse. Coalesce it to one per frame instead of one per event.
++document.addEventListener('pointermove', (e) => {
++  if (pressing) return;
++  pendingPointer = e;
++  if (!pointerFrame) pointerFrame = requestAnimationFrame(() => {
++    pointerFrame = 0;
++    const ev = pendingPointer;
++    pendingPointer = null;
++    if (ev) runPointer(ev);
++  });
+ });
+ /**
+- * The pet window also reports where the cursor is on its own, a few times a second: a click-through
+- * window may miss the move that takes the cursor off the pet (onto the taskbar, another screen),
+- * and the hover buttons would then stay.
++ * The pet window also reports where the cursor is on its own, about 200 times a second: a
++ * click-through window may miss the move that takes the cursor off the pet (onto the taskbar,
++ * another screen), and the hover buttons would then stay.
+  */
++let dragPoint = null, dragFrame = 0, cursorTicks = 0, nativeDrag = false;
+ host?.onCursor?.((p) => {
+   cursor.at = p;
++  cursorTicks++;
++  // Hover at 60 Hz is enough; during a drag every report feeds the rAF queue.
++  if (!pressing && (cursorTicks % 3)) return;
++  if (p) {
++    lastPointer.x = p.x; lastPointer.y = p.y;
++    if (pressing) {
++      if (p.button === false) { up({ clientX: p.x, clientY: p.y }); return; }
++      dragPoint = p;
++      if (!dragFrame) dragFrame = requestAnimationFrame(() => {
++        dragFrame = 0;
++        const q = dragPoint;
++        dragPoint = null;
++        if (q) {
++          body?.pointer('move', { x: q.x, y: q.y, t: performance.now() });
++          followDrag(q);
++        }
++      });
++      if (!nativeDrag) setInteractive(true, 'poll');
++      return;
++    }
++    body?.pointer('move', { x: p.x, y: p.y, t: performance.now() });
++    followDrag(p);
++  }
+   if (!p) {
+     diag.poll = { at: performance.now(), off: true };
+     if (!pressing) setInteractive(false, 'poll');
+@@ -1543,13 +1580,21 @@ host?.onCursor?.((p) => {
+ /** A press that began on the body and has not been let go of: the window keeps the mouse meanwhile. */
+ let pressing = false;
+ stage.addEventListener('pointerdown', (e) => {
++  pendingPointer = null;
++  dragPoint = null;
+   if (e.button !== 0) return;
+   closeMenu();
+   const p = { x: e.clientX, y: e.clientY, t: e.timeStamp };
+   body?.pointer('down', p);
+-  if (body?.hit(p)) { pressing = true; stage.setPointerCapture(e.pointerId); e.preventDefault(); }
++  if (body?.hit(p)) {
++    pressing = true;
++    stage.setPointerCapture(e.pointerId);
++    e.preventDefault();
++    if (host?.dragStart) { nativeDrag = true; host.dragStart(); }
++  }
+ });
+-const up = (e) => { pressing = false; body?.pointer('up', { x: e?.clientX ?? lastPointer.x, y: e?.clientY ?? lastPointer.y, t: e?.timeStamp ?? performance.now() }); stage.style.cursor = ''; };
++const up = (e) => { pendingPointer = null; dragPoint = null; nativeDrag = false; pressing = false; body?.pointer('up', { x: e?.clientX ?? lastPointer.x, y: e?.clientY ?? lastPointer.y, t: e?.timeStamp ?? performance.now() }); stage.style.cursor = ''; };
++host?.onDragEnd?.(() => { if (pressing) up({ clientX: lastPointer.x, clientY: lastPointer.y }); });
+ /**
+  * Most milliseconds a drop on another display waits for the page to take the window's new size
+  * (within a pixel: fractional scales round it). The size normally arrives a frame or two after
+@@ -1603,8 +1648,8 @@ stage.addEventListener('pointerup', async (e) => {
+     document.body.style.visibility = '';
+   }
+ });
+-stage.addEventListener('pointercancel', up);
+-document.addEventListener('pointerleave', () => { cursor.at = null; body?.pointer('leave', {}); });
++stage.addEventListener('pointercancel', (e) => { if (!nativeDrag) up(e); });
++document.addEventListener('pointerleave', () => { if (pressing) return; pendingPointer = null; dragPoint = null; cursor.at = null; body?.pointer('leave', {}); });
+ stage.addEventListener('dblclick', (e) => { if (prefs.doubleClickChat && body?.hit({ x: e.clientX, y: e.clientY })) openInput(); });
+ document.addEventListener('contextmenu', (e) => {
+   e.preventDefault();
+@@ -1850,7 +1895,7 @@ function frame(now) {
+     const msg = err?.message ?? String(err);
+     if (msg !== frameErr) { frameErr = msg; console.error(err); }
+   }
+-  const full = prefs.lockFrameRate || !!at()?.moving;
++  const full = prefs.lockFrameRate || !!at()?.moving || pressing;
+   // a moving rate of 0 draws on every display refresh
+   gap = full ? (prefs.frameRate > 0 ? 1000 / prefs.frameRate : 0) : 1000 / RESTING_FPS;
+   // a frame more than a gap late starts the count again instead of drawing the missed ones back to back
