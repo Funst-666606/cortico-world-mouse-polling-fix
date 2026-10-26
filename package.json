@@ -1,0 +1,62 @@
+{
+  "name": "cortico-world-mouse-polling-fix",
+  "version": "0.1.7",
+  "type": "module",
+  "description": "性能优化：Coopanion 桌宠鼠标回报率修复。用 Cortico World 关闭逐事件鼠标转发，并把页面 pointermove 合并到每帧，解决 500Hz 以上、尤其 8000Hz 拖动卡顿。安装后重启 Coopanion，启用「鼠标回报率修复」后再重启一次，否则不生效。A Cortico World for Coopanion. 作者 funst，QQ 2674459204。",
+  "author": {
+    "name": "funst",
+    "email": "2674459204@qq.com"
+  },
+  "license": "MIT",
+  "os": [
+    "win32"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "./src/index.js",
+  "keywords": [
+    "cortico-world",
+    "cortico",
+    "coopanion",
+    "mouse",
+    "polling",
+    "performance"
+  ],
+  "cortico": {
+    "kind": "world",
+    "api": 6,
+    "displayName": "鼠标回报率修复（Mouse Polling Fix）",
+    "locales": {
+      "zh": {
+        "displayName": "鼠标回报率修复",
+        "description": "性能优化：解决 Coopanion 桌宠在高鼠标回报率下的卡顿。关闭全局逐事件鼠标转发，并把桌宠页面的 pointermove 合并到每帧。安装后重启，启用后再重启一次，否则不生效。作者 funst，QQ 2674459204，MIT 协议。"
+      },
+      "en": {
+        "displayName": "Mouse Polling Fix",
+        "description": "Fixes Coopanion's high-polling-rate mouse lag by removing per-event mouse forwarding and coalescing the pet page's pointermove to one per frame. Restart after install, then restart again after enabling. Author: funst (QQ 2674459204), MIT."
+      }
+    },
+    "describe": "describe.json",
+    "tags": [
+      "experimental",
+      "apps",
+      "performance"
+    ],
+    "icon": "src/icon.svg"
+  },
+  "files": [
+    "src",
+    "scripts",
+    "test",
+    "describe.json",
+    "README.md",
+    "IMPLEMENTATION.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "node test/patch.test.mjs && node test/world.test.mjs && node test/auto.test.mjs",
+    "build:describe": "node scripts/write-describe.mjs"
+  }
+}

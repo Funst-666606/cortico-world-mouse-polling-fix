@@ -1,0 +1,9 @@
+node_modules/
+*.tgz
+.npm-cache/
+.npmrc*
+test/install/
+test/.check*/
+test/.apply*
+test/.debug*
+Install-*.cmd

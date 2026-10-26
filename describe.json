@@ -1,0 +1,60 @@
+{
+  "tools": [
+    {
+      "name": "mouse_fix_status",
+      "description": "Report whether the Coopanion desktop-pet host is patched to stop per-event mouse forwarding: Coopanion version, host package version, each patched file and its state, backup location, and the last error. Read-only.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "tags": [
+        "read"
+      ],
+      "summary": {
+        "zh": "查看桌宠的鼠标转发补丁是否已生效、备份在哪里、上次失败的原因。",
+        "en": "Reports whether the desktop-pet mouse-forwarding patch is in effect, where its backups are, and the last error."
+      }
+    },
+    {
+      "name": "mouse_fix_apply",
+      "description": "Patch the installed Coopanion desktop-pet host now: force setIgnoreMouseEvents(..., { forward: false }) in the host and lease, set the cursor poll interval, and wrap the page pointermove handler so it runs at most once per animation frame. Idempotent; writes backups first. Restart Coopanion if the pet window is already running. Use this after a Coopanion update, or when auto-apply is off.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "poll_ms": {
+            "type": "integer",
+            "minimum": 4,
+            "maximum": 100,
+            "description": "Cursor poll interval in milliseconds; 5 by default (180 Hz display). Lower is more responsive, higher is cheaper."
+          }
+        },
+        "required": []
+      },
+      "tags": [
+        "act"
+      ],
+      "summary": {
+        "zh": "给当前安装的 Coopanion 桌宠打补丁：关闭逐事件鼠标转发，把光标轮询调到 5ms，并让页面 pointermove 每帧只处理一次；先备份，可重复执行。",
+        "en": "Patches the installed Coopanion pet host: disables per-event mouse forwarding, moves the cursor poll to 5 ms, and coalesces the page pointermove to one per frame; backs up first, idempotent."
+      }
+    },
+    {
+      "name": "mouse_fix_restore",
+      "description": "Restore the desktop-pet host files from the backups this extension made, undoing the patch. Restart Coopanion afterwards. Refuses when the current files no longer match the patched state.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "tags": [
+        "act"
+      ],
+      "summary": {
+        "zh": "用本扩展留下的备份还原桌宠宿主文件，撤销补丁；需要重启 Coopanion。",
+        "en": "Restores the desktop-pet host files from this extension’s backups; restart Coopanion afterwards."
+      }
+    }
+  ],
+  "events": []
+}

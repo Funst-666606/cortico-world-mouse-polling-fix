@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mouse Polling Fix">
+  <rect width="64" height="64" rx="14" fill="#00A870"/>
+  <path d="M27 13c-6.6 0-11 5.4-11 12v14c0 6.6 4.4 12 11 12h10c6.6 0 11-5.4 11-12V25c0-6.6-4.4-12-11-12H27Z" fill="none" stroke="#fff" stroke-width="3.2"/>
+  <path d="M32 14v11" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M16 27h32" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".75"/>
+  <path d="M40 37h9m-4.5-4.5L49 37l-4.5 4.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+  <path d="M14 44h7M12 50h9" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".55"/>
+</svg>
