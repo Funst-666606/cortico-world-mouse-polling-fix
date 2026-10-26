@@ -3,6 +3,14 @@
   "version": "0.1.7",
   "type": "module",
   "description": "性能优化：Coopanion 桌宠鼠标回报率修复。用 Cortico World 关闭逐事件鼠标转发，并把页面 pointermove 合并到每帧，解决 500Hz 以上、尤其 8000Hz 拖动卡顿。安装后重启 Coopanion，启用「鼠标回报率修复」后再重启一次，否则不生效。A Cortico World for Coopanion. 作者 funst，QQ 2674459204。",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Funst-666606/cortico-world-mouse-polling-fix.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Funst-666606/cortico-world-mouse-polling-fix/issues"
+  },
+  "homepage": "https://github.com/Funst-666606/cortico-world-mouse-polling-fix#readme",
   "author": {
     "name": "funst",
     "email": "2674459204@qq.com"

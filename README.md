@@ -8,7 +8,7 @@ A **Cortico World** for [Coopanion](https://github.com/Pal-AI-Lab/Coopanion) tha
 >
 > 状态：实验性、仅 Windows，并且会**修改已安装的 Coopanion 桌宠宿主文件**。启用前请读 [Risks](#risks)。这不是 Pal AI Lab 官方扩展。
 
-**作者 / Author:** funst（QQ **2674459204**） · **License:** MIT（宽松开源协议） · **npm:** [cortico-world-mouse-polling-fix](https://www.npmjs.com/package/cortico-world-mouse-polling-fix)
+**作者 / Author:** funst（QQ **2674459204**） · **License:** MIT（宽松开源协议） · **npm:** [cortico-world-mouse-polling-fix](https://www.npmjs.com/package/cortico-world-mouse-polling-fix) · **GitHub:** [Funst-666606/cortico-world-mouse-polling-fix](https://github.com/Funst-666606/cortico-world-mouse-polling-fix)
 
 **标签 / Tags:** `experimental`、`apps`、`performance`（中文显示「性能优化」，需市场索引 #341 通过后由市场显示）。
 

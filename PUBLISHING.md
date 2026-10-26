@@ -5,6 +5,7 @@
 - npm: https://www.npmjs.com/package/cortico-world-mouse-polling-fix
 - tarball: https://registry.npmjs.org/cortico-world-mouse-polling-fix/-/cortico-world-mouse-polling-fix-0.1.7.tgz
 - market sync: https://github.com/Pal-AI-Lab/cortico-extensions/issues/347 (closed, **listed at 0.1.7**)
+- source: https://github.com/Funst-666606/cortico-world-mouse-polling-fix
 - market discussion: https://github.com/Pal-AI-Lab/cortico-extensions/discussions/337
 - new tag request: https://github.com/Pal-AI-Lab/cortico-extensions/issues/341 (`performance`, 中文「性能优化」)
 - author: funst（QQ 2674459204） · License: MIT
@@ -71,9 +72,9 @@ When Coopanion updates its desktop-pet host lines:
 
 The goal is that an app update is never silently half-patched: unknown lines are refused, and the user is told to update this plugin.
 
-## 4. Optional: source repository
+## 4. Source repository
 
-The package has no `repository` field yet. If you publish the source on GitHub, add it and a `bugs` URL; the market shows both. A repository also gives users an issue tracker and lets `npm` link the source.
+Source is at <https://github.com/Funst-666606/cortico-world-mouse-polling-fix> with tag `v0.1.7` and a GitHub Release. `package.json` carries `repository`, `bugs` and `homepage` pointing there. The npm 0.1.7 tarball was published just before those metadata fields were added; the next version will include them.
 
 ## 5. Local install from the packed tarball
 
